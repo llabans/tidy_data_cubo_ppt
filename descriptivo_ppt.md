@@ -1,8 +1,9 @@
-Poblacion \| departamento
+TABLAS CUBO -\> PPT: MORBILIDAD LIMA POR DISTRITO
 ================
 LL
+2024-07-17
 
-# FORMATO: ESTRICTURA DE CUBO
+# FORMATO: ESTRUCTURA DE CUBO
 
 ## TABLA SIN EDAD/CON EDAD
 
@@ -22,7 +23,7 @@ LL
 
 # DESCRIPTIVE LIMA BY DISTRICT data_clean \| data_conedad4_clean
 
-# TIDY: procesamiento de tabla cubo \| data \| data_conedad4_clean
+# TIDY: proccessing data of CUBO \| data \| data_conedad4_clean
 
 ``` r
 #calculo %: denominador x cada grupo de distrito-provincia
@@ -56,16 +57,16 @@ glimpse(data_conedad4_clean)
     ## $ total        <dbl> 1, 1, 1, 1, 4, 1, 1, 3, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, …
     ## $ etapa_vida   <chr> "Niños", "Niños", "Niños", "Niños", "Niños", "Adolescente…
 
-# PORCENTAJES
+# PERCENT
 
 ``` r
-#crear variable ranking, a nivel de cada distrito-provincia
+#ranking, nivel de cada distrito-provincia
 data_rank <- data_ %>%
     group_by(provincia_rh, distrito_rh) %>%
     mutate(ranking = dense_rank(desc(porcentaje))) %>%
     ungroup()
 view(data_rank)
-# ordenar de mayor a menor de acuerdo al ranking
+# ordenar
 data_order <- data_rank %>%
     arrange(provincia_rh, distrito_rh, ranking)
 
@@ -92,7 +93,6 @@ glimpse(data_top10)
 
 ``` r
 # Data_conedad4_clean
-# Agrupar y resumir datos por distrito, provincia y etapa de vida
 data_resumen <- data_conedad4_clean %>%
     group_by(provincia_rh, distrito_rh, etapa_vida, categoria) %>%
     summarise(n = sum(total, na.rm = TRUE)) %>%
@@ -103,7 +103,7 @@ data_resumen <- data_conedad4_clean %>%
     ## 'etapa_vida'. You can override using the `.groups` argument.
 
 ``` r
-# Calcular los totales por distrito, provincia y etapa de vida
+# Totales por distrito, provincia y etapa de vida
 totales <- data_conedad4_clean %>%
     group_by(provincia_rh, distrito_rh, etapa_vida) %>%
     summarise(Total_individuos = sum(total, na.rm = TRUE)) %>%
@@ -114,13 +114,12 @@ totales <- data_conedad4_clean %>%
     ## override using the `.groups` argument.
 
 ``` r
-# Unir los datos resumidos con los totales de individuos
+# Join resumidos con totales
 datos_porcentaje <- data_resumen %>%
     inner_join(totales, by = c("provincia_rh", "distrito_rh", "etapa_vida")) %>%
     mutate(Porcentaje = round((n / Total_individuos) * 100,1)) %>%
     arrange(provincia_rh, distrito_rh, etapa_vida, desc(Porcentaje))
 
-# Ver la estructura de los datos resumidos con porcentajes
 glimpse(datos_porcentaje)
 ```
 
@@ -135,7 +134,7 @@ glimpse(datos_porcentaje)
     ## $ Porcentaje       <dbl> 14.3, 12.3, 7.9, 5.3, 4.1, 2.1, 2.1, 1.8, 1.6, 1.5, 1…
 
 ``` r
-view(datos_porcentaje) # con edad
+view(datos_porcentaje)
 
 # Verificar que sumatoria % x cada grupo de edad en cada distrito
 datos_verificados <- datos_porcentaje %>%
@@ -168,13 +167,13 @@ print(datos_verificados) #casi 100%
 
 ``` r
 ######################################
-# Crear la variable de ranking usando dense_rank
+# Ranking dense_rank
 datos_rankeados <- datos_porcentaje %>%
     group_by(provincia_rh, distrito_rh, etapa_vida) %>%
     mutate(Ranking = dense_rank(-Porcentaje)) %>%
     ungroup()
 
-# Ver la estructura de los datos con el ranking
+# Estructura de datos con ranking
 glimpse(datos_rankeados)
 ```
 
@@ -221,7 +220,7 @@ glimpse(datosedad_top10)
     ## $ Porcentaje       <dbl> 14.3, 12.3, 7.9, 5.3, 4.1, 2.1, 2.1, 1.8, 1.6, 1.5, 1…
     ## $ Ranking          <int> 1, 2, 3, 4, 5, 6, 6, 7, 8, 9, 10, 10, 1, 2, 3, 4, 5, …
 
-### Resumen Nas data_clean
+### SUMM: Nas data_clean
 
 ``` r
 missing_data_top10 <- data_top10 %>%
@@ -268,7 +267,7 @@ ppt <- read_pptx()
 
 # districts
 distritos <- unique(data_top10$distrito_rh)
-max_rows <- 11 # Max rows per table
+max_rows <- 11 # Rows
 
 for (i in seq_along(distritos)) {
     distrito <- distritos[i]
@@ -276,9 +275,9 @@ for (i in seq_along(distritos)) {
     tabla_completa <- data_top10 %>%
         filter(distrito_rh == distrito) %>%
         select(ranking, categoria, total, porcentaje, provincia_rh, total_distrito) %>%
-        mutate(porcentaje = round(porcentaje, 3)) # Round percentage to 3 decimals
+        mutate(porcentaje = round(porcentaje, 3)) 
 
-    # Choose the maximum value for total_distrito if there are inconsistencies
+    # Max value total_distrito 
     total_poblacion <- max(tabla_completa$total_distrito, na.rm = TRUE)
 
     num_partes <- ceiling(nrow(tabla_completa) / max_rows)
@@ -321,18 +320,17 @@ for (i in seq_along(distritos)) {
     }
 }
 
-#disminuir tamaño de titulo 
+#titulo formato
 ppt <- ph_with(ppt, value = formatted_title, location = ph_location(left = 1, top = 0.5, width = 8, height = 1))
 ```
 
-# Function to generate districts tables inside each department
+# FUNCTION: ANALYSIS AT DISTRICT \| BY DEPARTMENT
 
 ``` r
-# Save the PowerPoint
 print(ppt, target = "general_distritos.pptx")
 ```
 
-# PPT por etapa de etapa_vida
+# PPT BY AGE
 
 ``` r
 library(officer)
@@ -340,14 +338,12 @@ library(flextable)
 library(dplyr)
 library(stringr)
 
-# Function to capitalize words
 capitalize_words <- function(s) {
     sapply(strsplit(s, " "), function(x) {
         paste(toupper(substring(x, 1, 1)), tolower(substring(x, 2)), sep = "", collapse = " ")
     })
 }
 
-# Crear una nueva presentación de PowerPoint
 ppt2 <- read_pptx()
 
 # Agrupar los datos por distrito y etapa de vida
@@ -365,9 +361,9 @@ for (distrito in distritos) {
 
         tabla_completa <- data_etapa %>%
             select(Ranking, categoria, n, Porcentaje, provincia_rh, Total_individuos) %>%
-            mutate(Porcentaje = round(Porcentaje, 3)) # Redondear porcentaje a 3 decimales
+            mutate(Porcentaje = round(Porcentaje, 3)) 
 
-        # Escoger el valor máximo de total_distrito si hay inconsistencias
+        # valor máximo de total_distrito 
         total_poblacion <- max(tabla_completa$Total_individuos, na.rm = TRUE)
 
         num_partes <- ceiling(nrow(tabla_completa) / max_rows)
@@ -411,6 +407,5 @@ for (distrito in distritos) {
     }
 }
 
-# Guardar la presentación
 print(ppt2, target = "morbilidad_lima_etapavida.pptx")
 ```
